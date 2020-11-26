@@ -172,7 +172,7 @@ class AudioDataset(Dataset):
             feature = ta.transforms.MelScale(n_mels=40, sample_rate=sample_frequency)(feature)
             feature = feature[0].squeeze(dim=0)
             feature = feature.T
-            print(feature.shape)
+            # print(feature.shape)
 
         if self.params['apply_cmvn']:
             spk_id = self.utt2spk[utt_id]

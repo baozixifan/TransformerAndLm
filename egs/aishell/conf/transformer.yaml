@@ -18,7 +18,7 @@ model:
   # network architecture
   type: transformer
   d_model: 320
-  normalize_before: False
+  normalize_before: True
   concat_after: False
   # dropout
   pos_dropout_rate: 0.1

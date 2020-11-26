@@ -88,6 +88,7 @@ if __name__ == '__main__':
                             dither=0.0)
     featureNew = ta.transforms.Spectrogram(win_length=400, hop_length=160, power=None)(waveform)
     print(f'featureNew1 = {featureNew.shape}')
+    print(f'featureNew1 = {featureNew}')
     featureNew = ta.transforms.TimeStretch(hop_length=160, n_freq=201, fixed_rate=1.1)(featureNew)
     print(f'featureNew2 = {featureNew.shape}')
     featureNew = complex_norm(featureNew, power=2.)

@@ -140,6 +140,10 @@ class AudioDataset(Dataset):
                 print('Load CMVN Stats')
 
         self.apply_spec_augment = self.params['spec_augment'] if not self.is_eval else False
+
+        self.spectrogram = ta.transforms.Spectrogram(win_length=400, hop_length=160, power=None)
+        self.MelScale = ta.transforms.MelScale(n_mels=40, sample_rate=16000)
+
         if self.apply_spec_augment:
             effect_chain = augment.EffectChain()
             # The pitch effect changes the sampling ratio; we have to compensate for that.
@@ -147,6 +151,7 @@ class AudioDataset(Dataset):
             # effect_chain_past.pitch("-q", random_pitch_shift).rate("-q", 16_000)
             effect_chain.pitch("-q", -500).rate("-q", 16_000)
             self.effect_chain_runner = ChainRunner(effect_chain)
+            self.TimeStretch = ta.transforms.TimeStretch(hop_length=160, n_freq=201, fixed_rate=None)
 
             print('Apply SpecAugment!')
 
@@ -162,17 +167,19 @@ class AudioDataset(Dataset):
                 if flag == 1:
                     waveform = self.effect_chain_runner(waveform)
 
-            feature = ta.transforms.Spectrogram(win_length=400, hop_length=160, power=None)(waveform)
+            feature = self.spectrogram(waveform)
             # feature = compute_fbank(wavform, num_mel_bins=self.params['num_mel_bins'], sample_frequency=sample_frequency, dither=0.0)
             if self.apply_spec_augment:
                 if flag == 1:
                     speed = random.uniform(0.9, 1.1)
-                    feature = ta.transforms.TimeStretch(hop_length=160, n_freq=201, fixed_rate=speed)(feature)
+                    feature = self.TimeStretch(complex_specgrams=feature, overriding_rate=speed)
             feature = complex_norm(feature, power=2.)
-            feature = ta.transforms.MelScale(n_mels=40, sample_rate=sample_frequency)(feature)
+            feature = self.MelScale(feature)
+
             feature = feature[0].squeeze(dim=0)
             feature = feature.T
-            print(feature.shape)
+            # print(feature.shape)
+            # print(f'feature1 = {feature}')
 
         if self.params['apply_cmvn']:
             spk_id = self.utt2spk[utt_id]

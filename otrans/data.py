@@ -13,6 +13,12 @@ import numpy as np
 import torchaudio as ta
 from torch.utils.data import Dataset, DataLoader
 from prefetch_generator import BackgroundGenerator
+import augment
+import numpy as np
+import random
+from torch import Tensor
+from otrans.DataAugment import ChainRunner
+from otrans.DataAugment import random_pitch_shift, complex_norm
 
 PAD = 0
 EOS = 1
@@ -135,16 +141,38 @@ class AudioDataset(Dataset):
 
         self.apply_spec_augment = self.params['spec_augment'] if not self.is_eval else False
         if self.apply_spec_augment:
+            effect_chain = augment.EffectChain()
+            # The pitch effect changes the sampling ratio; we have to compensate for that.
+            # Here, we specify 'quick' options on both pitch and rate effects, to speed up things
+            # effect_chain_past.pitch("-q", random_pitch_shift).rate("-q", 16_000)
+            effect_chain.pitch("-q", -500).rate("-q", 16_000)
+            self.effect_chain_runner = ChainRunner(effect_chain)
+
             print('Apply SpecAugment!')
 
     def __getitem__(self, index):
         utt_id, path = self.file_list[index]
+        flag = random.randint(1, 3)
 
         if self.from_kaldi:
             feature = kio.load_mat(path)
         else:
-            wavform, sample_frequency = ta.load(path)
-            feature = compute_fbank(wavform, num_mel_bins=self.params['num_mel_bins'], sample_frequency=sample_frequency, dither=0.0)
+            waveform, sample_frequency = ta.load(path)
+            if self.apply_spec_augment:
+                if flag == 1:
+                    waveform = self.effect_chain_runner(waveform)
+
+            feature = ta.transforms.Spectrogram(win_length=400, hop_length=160, power=None)(waveform)
+            # feature = compute_fbank(wavform, num_mel_bins=self.params['num_mel_bins'], sample_frequency=sample_frequency, dither=0.0)
+            if self.apply_spec_augment:
+                if flag == 1:
+                    speed = random.uniform(0.9, 1.1)
+                    feature = ta.transforms.TimeStretch(hop_length=160, n_freq=201, fixed_rate=speed)(feature)
+            feature = complex_norm(feature, power=2.)
+            feature = ta.transforms.MelScale(n_mels=40, sample_rate=sample_frequency)(feature)
+            feature = feature[0].squeeze(dim=0)
+            feature = feature.T
+            print(feature.shape)
 
         if self.params['apply_cmvn']:
             spk_id = self.utt2spk[utt_id]
@@ -155,6 +183,7 @@ class AudioDataset(Dataset):
             feature = normalization(feature)
             
         if self.apply_spec_augment:
+
             feature = spec_augment(feature)
 
         feature_length = feature.shape[0]

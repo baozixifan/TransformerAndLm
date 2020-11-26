@@ -54,6 +54,6 @@ train:
   epochs: 30
   accum_steps: 4
   grad_noise: False
-  load_model: egs/aishell2/exp/transformer/model.epoch.14.pt
+  load_model: False
   save_name: transformerrecordandfix
-  #egs/aishell/exp/transformer/model
+  #egs/aishell2/exp/transformer/model.epoch.14.pt

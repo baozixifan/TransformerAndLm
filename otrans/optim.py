@@ -88,7 +88,7 @@ class FinetuningOptimizer(Optimizer):
 
     def __init__(self, model):
 
-        self.lr = 2e-5
+        self.lr = 1e-5
         self.model = model
         self.global_step = 0
         self.global_epoch = 0

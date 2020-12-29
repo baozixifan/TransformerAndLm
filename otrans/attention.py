@@ -104,7 +104,7 @@ class MultiHeadedAttentionPdrophead(nn.Module):
         self.attn = None
         self.dropout = nn.Dropout(p=dropout_rate)
         self.p = float(p)
-        print(f'The probability of dropping the head is {self.p}')
+        # print(f'The probability of dropping the head is {self.p}')
         # print(self.training)
 
     def forward(self, query, key, value, mask):

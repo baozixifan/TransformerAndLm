@@ -34,7 +34,7 @@ class Trainer(object):
         self.grad_noise = params['train']['grad_noise']
         self.grad_clip = params['train']['clip_grad']
         self.global_step = optimizer.global_step
-        self.log_interval = 500
+        self.log_interval = 100
         self.mean_loss = MeanLoss()
 
         self.mixed_precision = mixed_precision
@@ -128,54 +128,57 @@ class Trainer(object):
 
         step_loss = AverageMeter()
         span = 0
-        for step, (_, batch) in enumerate(train_loader):
+        for step, (utt_id, batch) in enumerate(train_loader):
+            try:
 
-            if self.ngpu > 0:
-                batch = map_to_cuda(batch)
+                if self.ngpu > 0:
+                    batch = map_to_cuda(batch)
 
-            start = time.process_time()
-            loss = self.model(**batch)
-            loss = torch.mean(loss) / self.accum_steps
+                start = time.process_time()
+                loss = self.model(**batch)
+                loss = torch.mean(loss) / self.accum_steps
 
-            if self.mixed_precision:
-                import apex.amp as amp
-                with amp.scale_loss(loss, self.optimizer.optimizer) as scaled_loss:
-                    scaled_loss.backward()
-            else:
-                loss.backward()
-            end = time.process_time()
-            span += (end - start)
-            if self.grad_noise:
-                raise NotImplementedError
-
-            if self.get_rank() == 0:
-                step_loss.update(loss.item() * self.accum_steps, batch['inputs'].size(0))
-
-            if step % self.accum_steps == 0:
-                if self.local_rank == 0:
-                    self.mean_loss.update(step_loss.avg)
-                grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
-                if math.isnan(grad_norm):
-                    self.logger.warning('Grad norm is NAN. DO NOT UPDATE MODEL!')
+                if self.mixed_precision:
+                    import apex.amp as amp
+                    with amp.scale_loss(loss, self.optimizer.optimizer) as scaled_loss:
+                        scaled_loss.backward()
                 else:
-                    self.optimizer.step()
-                self.optimizer.zero_grad()
+                    loss.backward()
+                end = time.process_time()
+                span += (end - start)
+                if self.grad_noise:
+                    raise NotImplementedError
 
-                if self.is_visual and self.local_rank == 0:
-                    self.visulizer.add_scalar('train_loss', loss.item(), self.global_step)
-                    self.visulizer.add_scalar('lr', self.optimizer.lr, self.global_step)
+                if self.get_rank() == 0:
+                    step_loss.update(loss.item() * self.accum_steps, batch['inputs'].size(0))
 
-                if self.global_step % self.log_interval == 0 and self.local_rank == 0:
-                    
-                    # process = step * self.world_size / batch_steps * 100
-                    process = step / batch_steps * 100
-                    self.logger.info('-Training-Epoch-%d(%.5f%%), Global Step:%d, lr:%.8f, Loss:%.5f, AvgLoss: %.5f, '
-                                     'Run Time:%.3f' % (epoch, process, self.global_step, self.optimizer.lr,
-                                                        step_loss.avg, self.mean_loss.mean(), span))
-                    span = 0
+                if step % self.accum_steps == 0:
+                    if self.local_rank == 0:
+                        self.mean_loss.update(step_loss.avg)
+                    grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
+                    if math.isnan(grad_norm):
+                        self.logger.warning('Grad norm is NAN. DO NOT UPDATE MODEL!')
+                    else:
+                        self.optimizer.step()
+                    self.optimizer.zero_grad()
 
-                self.global_step += 1
-                step_loss.reset()
+                    if self.is_visual and self.local_rank == 0:
+                        self.visulizer.add_scalar('train_loss', loss.item(), self.global_step)
+                        self.visulizer.add_scalar('lr', self.optimizer.lr, self.global_step)
+
+                    if self.global_step % self.log_interval == 0 and self.local_rank == 0:
+
+                        # process = step * self.world_size / batch_steps * 100
+                        process = step / batch_steps * 100
+                        self.logger.info('-Training-Epoch-%d(%.5f%%), Global Step:%d, lr:%.8f, Loss:%.5f, AvgLoss: %.5f, '
+                                         'Run Time:%.3f' % (epoch, process, self.global_step, self.optimizer.lr,
+                                                            step_loss.avg, self.mean_loss.mean(), span))
+                        span = 0
+
+                    self.global_step += 1
+                    step_loss.reset()
+            except RuntimeError:
+                print(utt_id)
 
         return self.mean_loss.mean()
 

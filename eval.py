@@ -79,6 +79,24 @@ def main(args):
         targets = batch['targets']
         targets_length = batch['targets_length']
 
+        # for b in range(len(preds)):
+        #     n = step * batch_size + b
+        #     truth = ' '.join([unit2char[i.item()] for i in targets[b][1:targets_length[b]+1]])
+        #     print('[%d / %d ] %s - pred : %s' % (n, totals, utt_id[b], preds[b]))
+        #     print('[%d / %d ] %s - truth: %s' % (n, totals, utt_id[b], truth))
+        #     if utt_id[b][7] == '1':
+        #         newpred = preds[b] + " (" + 'S1000' + "-" + utt_id[b] + ")"
+        #         newtruth = truth + " (" + 'S1000' + "-" + utt_id[b] + ")"
+        #     elif utt_id[b][7] == '2':
+        #         newpred = preds[b] + " (" + 'S2000' + "-" + utt_id[b] + ")"
+        #         newtruth = truth + " (" + 'S2000' + "-" + utt_id[b] + ")"
+        #     elif utt_id[b][0] == 'O':
+        #         newpred = preds[b] + " (" + 'O' + "-" + utt_id[b] + ")"
+        #         newtruth = truth + " (" + 'O' + "-" + utt_id[b] + ")"
+        #     else:
+        #         newpred = preds[b] + " (" + utt_id[b][6:11] + "-" + utt_id[b] + ")"
+        #         newtruth = truth + " (" + utt_id[b][6:11] + "-" + utt_id[b] + ")"
+
         for b in range(len(preds)):
             n = step * batch_size + b
             truth = ' '.join([unit2char[i.item()] for i in targets[b][1:targets_length[b]+1]])
@@ -88,8 +106,10 @@ def main(args):
                 newpred = preds[b] + " (" + 'S1000' + "-" + utt_id[b] + ")"
                 newtruth = truth + " (" + 'S1000' + "-" + utt_id[b] + ")"
             elif utt_id[b][7] == '2':
-                newpred = preds[b] + " (" + 'S2000' + "-" + utt_id[b] + ")"
-                newtruth = truth + " (" + 'S2000' + "-" + utt_id[b] + ")"
+                newpred = preds[b] + " (" + utt_id[b][6:11] + "-" + utt_id[b] + ")"
+                newtruth = truth + " (" + utt_id[b][6:11] + "-" + utt_id[b] + ")"
+                writer.write(newpred + '\n')
+                writerRef.write(newtruth + '\n')
             elif utt_id[b][0] == 'O':
                 newpred = preds[b] + " (" + 'O' + "-" + utt_id[b] + ")"
                 newtruth = truth + " (" + 'O' + "-" + utt_id[b] + ")"
@@ -97,8 +117,7 @@ def main(args):
                 newpred = preds[b] + " (" + utt_id[b][6:11] + "-" + utt_id[b] + ")"
                 newtruth = truth + " (" + utt_id[b][6:11] + "-" + utt_id[b] + ")"
 
-            writer.write(newpred + '\n')
-            writerRef.write(newtruth + '\n')
+
 
     writer.close()
     writerRef.close()
@@ -108,7 +127,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, default=None)
     parser.add_argument('-n', '--ngpu', type=int, default=1)
-    parser.add_argument('-b', '--batch_size', type=int, default=16)
+    parser.add_argument('-b', '--batch_size', type=int, default=8)
     parser.add_argument('-bw', '--beam_width', type=int, default=5)
     parser.add_argument('-p', '--penalty', type=float, default=0.6)
     parser.add_argument('-ld', '--lamda', type=float, default=5)

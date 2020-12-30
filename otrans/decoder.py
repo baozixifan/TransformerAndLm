@@ -3,7 +3,7 @@ import random
 import torch.nn as nn
 import torch.nn.functional as F
 from otrans.utils import get_seq_mask, get_dec_seq_mask
-from otrans.module import LayerNorm, PositionalEncoding, LDPEPositionalEncoding
+from otrans.module import LayerNorm, PositionalEncoding, LDPEPositionalEncoding, LRPEPositionalEncoding
 from otrans.layer import TransformerDecoderLayer, TransformerEncoderLayer
 
 
@@ -17,7 +17,8 @@ class TransformerDecoder(nn.Module):
 
         self.embedding = torch.nn.Embedding(output_size, d_model)
         # self.pos_encoding = PositionalEncoding(d_model, pos_dropout_rate)
-        self.pos_encoding = LDPEPositionalEncoding(d_model, pos_dropout_rate, max_len=500)
+        # self.pos_encoding = LDPEPositionalEncoding(d_model, pos_dropout_rate, max_len=500)
+        self.pos_encoding = LRPEPositionalEncoding(d_model, pos_dropout_rate, max_len=500)
 
         self.blocks = nn.ModuleList([
             TransformerDecoderLayer(attention_heads, d_model, linear_units, slf_attn_dropout_rate, src_attn_dropout_rate,

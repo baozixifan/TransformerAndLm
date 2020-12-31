@@ -32,7 +32,6 @@ class PositionalEncoding(nn.Module):
         position = torch.arange(0, x.size(1), dtype=torch.float32).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float32) *
                              -(math.log(10000.0) / self.d_model))
-        print('P')
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0)
@@ -209,6 +208,8 @@ class PositionwiseFeedForward(nn.Module):
             x = F.tanh(x)
         elif self.activation == 'glu':
             x = F.glu(x)
+        elif self.activation == 'swish':
+            x = x * torch.sigmoid(x)
         else:
             raise NotImplementedError
         return self.w_2(self.dropout(x))
@@ -294,9 +295,9 @@ class Conv2dSubsampling(nn.Module):
         )
         self.out = nn.Sequential(
             nn.Linear(odim * (((idim - 1) // 2 - 1) // 2), odim),
-            # PositionalEncoding(odim, dropout_rate)
+            PositionalEncoding(odim, dropout_rate)
             # LDPEPositionalEncoding(odim, dropout_rate, max_len=1000)
-            LRPEPositionalEncoding(odim, dropout_rate, max_len=1000)
+            # LRPEPositionalEncoding(odim, dropout_rate, max_len=1000)
         )
 
     def forward(self, x, x_mask):

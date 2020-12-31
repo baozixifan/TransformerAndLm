@@ -16,9 +16,9 @@ class TransformerDecoder(nn.Module):
         self.normalize_before = normalize_before
 
         self.embedding = torch.nn.Embedding(output_size, d_model)
-        # self.pos_encoding = PositionalEncoding(d_model, pos_dropout_rate)
+        self.pos_encoding = PositionalEncoding(d_model, pos_dropout_rate)
         # self.pos_encoding = LDPEPositionalEncoding(d_model, pos_dropout_rate, max_len=500)
-        self.pos_encoding = LRPEPositionalEncoding(d_model, pos_dropout_rate, max_len=500)
+        # self.pos_encoding = LRPEPositionalEncoding(d_model, pos_dropout_rate, max_len=500)
 
         self.blocks = nn.ModuleList([
             TransformerDecoderLayer(attention_heads, d_model, linear_units, slf_attn_dropout_rate, src_attn_dropout_rate,

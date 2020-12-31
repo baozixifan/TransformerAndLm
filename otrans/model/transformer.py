@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from otrans.encoder import TransformerEncoder
+from otrans.model.conformer import ConformerEncoder
 from otrans.decoder import TransformerDecoder
 from otrans.metrics import LabelSmoothingLoss
 from otrans.utils import initialize
@@ -12,20 +13,34 @@ class Transformer(nn.Module):
 
         self.params = params
 
-        self.encoder = TransformerEncoder(input_size=params['feat_dim'],
-                                          d_model=params['d_model'],
-                                          attention_heads=params['n_heads'],
-                                          linear_units=params['enc_ffn_units'],
-                                          num_blocks=params['num_enc_blocks'],
-                                          pos_dropout_rate=params['pos_dropout_rate'],
-                                          slf_attn_dropout_rate=params['slf_attn_dropout_rate'],
-                                          ffn_dropout_rate=params['ffn_dropout_rate'],
-                                          residual_dropout_rate=params['residual_dropout_rate'],
-                                          input_layer=params['enc_input_layer'],
-                                          normalize_before=params['normalize_before'],
-                                          concat_after=params['concat_after'],
-                                          activation=params['activation'],
-                                          enc_drop_head=params['enc_drop_head'])
+        # self.encoder = TransformerEncoder(input_size=params['feat_dim'],
+        #                                   d_model=params['d_model'],
+        #                                   attention_heads=params['n_heads'],
+        #                                   linear_units=params['enc_ffn_units'],
+        #                                   num_blocks=params['num_enc_blocks'],
+        #                                   pos_dropout_rate=params['pos_dropout_rate'],
+        #                                   slf_attn_dropout_rate=params['slf_attn_dropout_rate'],
+        #                                   ffn_dropout_rate=params['ffn_dropout_rate'],
+        #                                   residual_dropout_rate=params['residual_dropout_rate'],
+        #                                   input_layer=params['enc_input_layer'],
+        #                                   normalize_before=params['normalize_before'],
+        #                                   concat_after=params['concat_after'],
+        #                                   activation=params['activation'],
+        #                                   enc_drop_head=params['enc_drop_head'])
+
+        self.encoder = ConformerEncoder(input_size=params['feat_dim'],
+                                        d_model=params['d_model'],
+                                        d_ff=params['enc_ffn_units'],
+                                        cov_kernel_size=params['conv_kernel_size'],
+                                        n_heads=params['n_heads'],
+                                        nblocks=params['num_enc_blocks'],
+                                        pos_dropout_rate=params['pos_dropout_rate'],
+                                        slf_attn_dropout=params['slf_attn_dropout_rate'],
+                                        ffn_dropout=params['ffn_dropout_rate'],
+                                        residual_dropout=params['residual_dropout_rate'],
+                                        conv_dropout=params['conv_dropout_rate'],
+                                        activation=params['activation'],
+                                        drop_head_rate=params['enc_drop_head'])
 
         self.decoder = TransformerDecoder(output_size=params['vocab_size'],
                                           d_model=params['d_model'],

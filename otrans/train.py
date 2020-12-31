@@ -130,7 +130,6 @@ class Trainer(object):
         span = 0
         for step, (utt_id, batch) in enumerate(train_loader):
             try:
-
                 if self.ngpu > 0:
                     batch = map_to_cuda(batch)
 
@@ -177,8 +176,10 @@ class Trainer(object):
 
                     self.global_step += 1
                     step_loss.reset()
+
             except RuntimeError:
                 print(utt_id)
+                torch.cuda.empty_cache()
 
         return self.mean_loss.mean()
 
